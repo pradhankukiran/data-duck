@@ -8,4 +8,5 @@ public interface IAiService
 {
     bool HasApiKey { get; }
     Task<string> GenerateSqlAsync(string englishQuestion, IReadOnlyList<LoadedFile> tables);
+    Task<DatasetInsight> ExplainDatasetAsync(LoadedFile table, IReadOnlyList<object?[]> sampleRows);
 }
