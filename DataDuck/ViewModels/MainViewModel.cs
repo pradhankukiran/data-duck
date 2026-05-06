@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -12,6 +13,7 @@ public partial class MainViewModel : ViewModelBase
 {
     private readonly IFileService? _fileService;
     private readonly IDuckDbService? _duckDb;
+    private readonly IAiService? _ai;
     private readonly HttpClient? _http;
 
     public FileListViewModel Files { get; }
@@ -19,6 +21,11 @@ public partial class MainViewModel : ViewModelBase
     public ResultsViewModel Results { get; }
     public QueryHistoryViewModel History { get; }
     public SettingsViewModel Settings { get; }
+    public ChartViewModel Chart { get; }
+    public InsightsViewModel Insights { get; }
+    public ProfileViewModel Profile { get; }
+    public JoinBuilderViewModel JoinBuilder { get; }
+    public ExportCommandsViewModel Export { get; }
 
     [ObservableProperty]
     private bool _isLoadingFile;
@@ -26,14 +33,23 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private string? _fileLoadError;
 
+    [ObservableProperty]
+    private LoadedFile? _activeFile;
+
     public MainViewModel(
         FileListViewModel files,
         SqlEditorViewModel editor,
         ResultsViewModel results,
         QueryHistoryViewModel history,
         SettingsViewModel settings,
+        ChartViewModel chart,
+        InsightsViewModel insights,
+        ProfileViewModel profile,
+        JoinBuilderViewModel joinBuilder,
+        ExportCommandsViewModel export,
         IFileService? fileService = null,
         IDuckDbService? duckDb = null,
+        IAiService? ai = null,
         HttpClient? http = null)
     {
         Files = files;
@@ -41,12 +57,32 @@ public partial class MainViewModel : ViewModelBase
         Results = results;
         History = history;
         Settings = settings;
+        Chart = chart;
+        Insights = insights;
+        Profile = profile;
+        JoinBuilder = joinBuilder;
+        Export = export;
         _fileService = fileService;
         _duckDb = duckDb;
+        _ai = ai;
         _http = http;
 
-        // Click a history entry → load its SQL into the editor.
         History.QuerySelected += q => Editor.SqlText = q.Sql;
+        Insights.QueryRunRequested += q =>
+        {
+            Editor.SqlText = q.Sql;
+            if (Editor.RunCommand.CanExecute(null)) Editor.RunCommand.Execute(null);
+        };
+        JoinBuilder.JoinChosen += join =>
+        {
+            Editor.SqlText = join.GeneratedSql;
+        };
+        Files.Files.CollectionChanged += (_, _) =>
+        {
+            if (ActiveFile is null && Files.Files.Count > 0)
+                SetActiveFile(Files.Files[0]);
+            JoinBuilder.Refresh(Files.Files);
+        };
     }
 
     // Design-time only — gives the XAML previewer something to bind to.
@@ -55,8 +91,19 @@ public partial class MainViewModel : ViewModelBase
         new SqlEditorViewModel(),
         new ResultsViewModel(),
         new QueryHistoryViewModel(),
-        new SettingsViewModel())
+        new SettingsViewModel(),
+        new ChartViewModel(),
+        new InsightsViewModel(),
+        new ProfileViewModel(),
+        new JoinBuilderViewModel(),
+        new ExportCommandsViewModel())
     { }
+
+    public void SetActiveFile(LoadedFile file)
+    {
+        ActiveFile = file;
+        _ = Profile.LoadAsync(file);
+    }
 
     [RelayCommand]
     private async Task OpenFileAsync()
@@ -70,18 +117,14 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private async Task LoadSampleAsync()
     {
-        if (_http is null)
-        {
-            FileLoadError = "HttpClient unavailable.";
-            return;
-        }
+        if (_http is null) { FileLoadError = "HttpClient unavailable."; return; }
         try
         {
             var bytes = await _http.GetByteArrayAsync("samples/sales.csv");
             await IngestAsync(new UploadedFile("sales.csv", bytes));
             Editor.SqlText =
                 "-- 500 synthetic sales rows. Try this:\n" +
-                "SELECT region, COUNT(*) AS orders, ROUND(SUM(amount), 2) AS revenue\n" +
+                "SELECT region, ROUND(SUM(amount), 2) AS revenue\n" +
                 "FROM sales\nGROUP BY region\nORDER BY revenue DESC;";
         }
         catch (Exception ex)
@@ -90,11 +133,42 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
-    /// <summary>
-    /// Ingest an uploaded file: hand it to DuckDB-WASM (which auto-creates a SQL view),
-    /// then add the populated LoadedFile (with real columns + row count) to the sidebar.
-    /// First call triggers the ~33 MB DuckDB-WASM bundle download — UI shows a spinner.
-    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanExplain))]
+    private async Task ExplainAsync()
+    {
+        if (_ai is null || _duckDb is null) return;
+        var file = ActiveFile ?? Files.Files.FirstOrDefault();
+        if (file is null) return;
+
+        Insights.IsLoading = true;
+        Insights.ErrorMessage = null;
+        Insights.IsOpen = true;
+        try
+        {
+            // Pull a small sample for the AI to look at.
+            var sample = await _duckDb.QueryAsync($"SELECT * FROM \"{file.TableName}\" LIMIT 20");
+            var insight = await _ai.ExplainDatasetAsync(file, sample.Rows);
+            Insights.Load(insight);
+        }
+        catch (Exception ex)
+        {
+            Insights.ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            Insights.IsLoading = false;
+        }
+    }
+
+    private bool CanExplain() => _ai is not null && _duckDb is not null && Files.Files.Count > 0;
+
+    [RelayCommand]
+    private void OpenJoinBuilder()
+    {
+        JoinBuilder.Refresh(Files.Files);
+        JoinBuilder.IsOpen = true;
+    }
+
     public async Task IngestAsync(UploadedFile file)
     {
         IsLoadingFile = true;
@@ -110,6 +184,7 @@ public partial class MainViewModel : ViewModelBase
 
             var loaded = await _duckDb.RegisterFileAsync(file.Name, file.Data);
             Files.Files.Add(loaded);
+            ExplainCommand.NotifyCanExecuteChanged();
         }
         catch (Exception ex)
         {

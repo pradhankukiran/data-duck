@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:DataDuck.ViewModels"
              xmlns:m="using:DataDuck.Models"
+             xmlns:views="using:DataDuck.Views"
              mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="800"
              x:Class="DataDuck.Views.MainView"
              x:DataType="vm:MainViewModel"
@@ -20,11 +21,513 @@
 
   <Grid RowDefinitions="56,*">
 
-    <!-- ================================================================== SETTINGS OVERLAY -->
+    <!-- ============================================================ TOP TOOLBAR -->
+    <Border Grid.Row="0"
+            Background="{StaticResource DdBgPanelBrush}"
+            BorderBrush="{StaticResource DdBorderBrush}"
+            BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="20,0">
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <TextBlock Text="🦆" FontSize="24"/>
+          <TextBlock Text="DataDuck" FontSize="18" FontWeight="SemiBold"
+                     Foreground="{StaticResource DdTextPrimaryBrush}"
+                     VerticalAlignment="Center"/>
+          <Border Background="{StaticResource DdBgHoverBrush}"
+                  CornerRadius="4" Padding="6,2"
+                  Margin="6,0,0,0" VerticalAlignment="Center">
+            <TextBlock Text="v0.2" FontSize="10"
+                       Foreground="{StaticResource DdTextMutedBrush}"/>
+          </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="🎲  Try sample"
+                  Padding="12,6"
+                  Background="{StaticResource DdAccentBrush}"
+                  Foreground="#0F1419"
+                  CornerRadius="6"
+                  FontWeight="Medium"
+                  Command="{Binding LoadSampleCommand}"/>
+          <Button Content="📂  Open"
+                  Padding="12,6"
+                  Background="Transparent"
+                  Foreground="{StaticResource DdTextPrimaryBrush}"
+                  BorderBrush="{StaticResource DdBorderBrush}"
+                  BorderThickness="1"
+                  CornerRadius="6"
+                  Command="{Binding OpenFileCommand}"/>
+          <Button Content="✨  Explain"
+                  Padding="12,6"
+                  Background="Transparent"
+                  Foreground="{StaticResource DdTextPrimaryBrush}"
+                  BorderBrush="{StaticResource DdBorderBrush}"
+                  BorderThickness="1"
+                  CornerRadius="6"
+                  Command="{Binding ExplainCommand}"
+                  ToolTip.Tip="Use Groq AI to summarise the active table and suggest queries"/>
+          <Button Content="🔗  JOIN"
+                  Padding="12,6"
+                  Background="Transparent"
+                  Foreground="{StaticResource DdTextPrimaryBrush}"
+                  BorderBrush="{StaticResource DdBorderBrush}"
+                  BorderThickness="1"
+                  CornerRadius="6"
+                  Command="{Binding OpenJoinBuilderCommand}"
+                  ToolTip.Tip="Suggest JOINs across loaded files"/>
+          <Button Content="⚙"
+                  Padding="10,6"
+                  Background="Transparent"
+                  Foreground="{StaticResource DdTextMutedBrush}"
+                  FontSize="16"
+                  CornerRadius="6"
+                  Command="{Binding Settings.OpenCommand}"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- ============================================================ MAIN LAYOUT -->
+    <Grid Grid.Row="1" ColumnDefinitions="320,*">
+
+      <!-- ====================================== LEFT SIDEBAR -->
+      <Border Grid.Column="0"
+              Background="{StaticResource DdBgSidebarBrush}"
+              BorderBrush="{StaticResource DdBorderBrush}"
+              BorderThickness="0,0,1,0">
+
+        <Grid RowDefinitions="Auto,*,Auto,*">
+
+          <StackPanel Grid.Row="0" Margin="16,16,16,8" Spacing="2">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="FILES" FontSize="11" FontWeight="Bold" LetterSpacing="1"
+                         Foreground="{StaticResource DdTextMutedBrush}"/>
+              <TextBlock Grid.Column="1"
+                         Text="{Binding Files.Files.Count, StringFormat='{}{0}'}"
+                         FontSize="11"
+                         Foreground="{StaticResource DdTextMutedBrush}"
+                         Opacity="0.7"/>
+            </Grid>
+            <TextBlock Text="Drop a CSV / Parquet / JSONL"
+                       FontSize="11"
+                       Foreground="{StaticResource DdTextMutedBrush}"
+                       Opacity="0.6"/>
+          </StackPanel>
+
+          <ListBox Grid.Row="1"
+                   Background="Transparent"
+                   BorderThickness="0"
+                   Padding="8,0"
+                   ItemsSource="{Binding Files.Files}"
+                   SelectedItem="{Binding ActiveFile, Mode=TwoWay}">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="Padding" Value="8,6"/>
+                <Setter Property="CornerRadius" Value="4"/>
+                <Setter Property="Margin" Value="0,1"/>
+              </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+              <DataTemplate DataType="m:LoadedFile">
+                <StackPanel Spacing="2">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="📄" FontSize="12" Opacity="0.7"/>
+                    <TextBlock Text="{Binding Name}"
+                               FontWeight="Medium" FontSize="13"
+                               Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="6" Margin="18,0,0,0">
+                    <TextBlock Text="{Binding RowCount, StringFormat='{}{0:N0} rows'}"
+                               FontSize="11"
+                               Foreground="{StaticResource DdTextMutedBrush}"/>
+                    <TextBlock Text="·" Foreground="{StaticResource DdTextMutedBrush}"/>
+                    <TextBlock Text="{Binding TableName}"
+                               FontFamily="Consolas, Menlo, monospace"
+                               FontSize="11"
+                               Foreground="{StaticResource DdAccentBrush}"
+                               Opacity="0.85"/>
+                  </StackPanel>
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <StackPanel Grid.Row="2" Margin="16,16,16,8" Spacing="2">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="QUERY HISTORY" FontSize="11" FontWeight="Bold" LetterSpacing="1"
+                         Foreground="{StaticResource DdTextMutedBrush}"/>
+              <TextBlock Grid.Column="1"
+                         Text="{Binding History.Items.Count, StringFormat='{}{0}'}"
+                         FontSize="11"
+                         Foreground="{StaticResource DdTextMutedBrush}"
+                         Opacity="0.7"/>
+            </Grid>
+          </StackPanel>
+
+          <ListBox Grid.Row="3"
+                   Background="Transparent"
+                   BorderThickness="0"
+                   Padding="8,0"
+                   ItemsSource="{Binding History.Items}"
+                   SelectionChanged="OnHistorySelectionChanged">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="Padding" Value="8,6"/>
+                <Setter Property="CornerRadius" Value="4"/>
+                <Setter Property="Margin" Value="0,1"/>
+              </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+              <DataTemplate DataType="m:SavedQuery">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{Binding Sql}"
+                             TextTrimming="CharacterEllipsis"
+                             FontFamily="Consolas, Menlo, monospace"
+                             FontSize="12"
+                             Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="{Binding ElapsedMs, StringFormat='{}{0} ms'}"
+                               FontSize="10"
+                               Foreground="{StaticResource DdSuccessBrush}"/>
+                    <TextBlock Text="·" FontSize="10"
+                               Foreground="{StaticResource DdTextMutedBrush}"/>
+                    <TextBlock Text="{Binding When, StringFormat='{}{0:HH:mm:ss}'}"
+                               FontSize="10"
+                               Foreground="{StaticResource DdTextMutedBrush}"/>
+                  </StackPanel>
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </Border>
+
+      <!-- ====================================== CENTER CONTENT -->
+      <Grid Grid.Column="1" RowDefinitions="*,5,*">
+
+        <!-- ===================================== SQL EDITOR PANE -->
+        <Grid Grid.Row="0" RowDefinitions="Auto,Auto,*,Auto" Margin="20,16,20,8">
+
+          <Border Grid.Row="0"
+                  Background="{StaticResource DdBgPanelBrush}"
+                  CornerRadius="8"
+                  BorderBrush="{StaticResource DdBorderBrush}"
+                  BorderThickness="1"
+                  Padding="14,4">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <TextBlock Text="✨" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0"
+                         Foreground="{StaticResource DdAccentBrush}"/>
+              <TextBox Grid.Column="1"
+                       Text="{Binding Editor.EnglishQuestion, Mode=TwoWay}"
+                       PlaceholderText="Ask in English (e.g. 'top 10 customers by revenue')"
+                       Background="Transparent"
+                       BorderThickness="0"
+                       FontSize="13"
+                       Foreground="{StaticResource DdTextPrimaryBrush}"/>
+              <Button Grid.Column="2"
+                      Content="Generate SQL"
+                      Padding="12,6"
+                      CornerRadius="4"
+                      Background="{StaticResource DdAccentBrush}"
+                      Foreground="#0F1419"
+                      FontWeight="Medium"
+                      FontSize="12"
+                      Command="{Binding Editor.GenerateSqlCommand}"/>
+            </Grid>
+          </Border>
+
+          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="2,16,0,6">
+            <TextBlock Text="SQL"
+                       FontSize="11" FontWeight="Bold" LetterSpacing="1"
+                       Foreground="{StaticResource DdTextMutedBrush}"/>
+            <TextBlock Text="Ctrl+Enter to run"
+                       FontSize="11"
+                       Foreground="{StaticResource DdTextMutedBrush}"
+                       Opacity="0.6"/>
+          </StackPanel>
+
+          <Border Grid.Row="2"
+                  Background="{StaticResource DdBgPanelBrush}"
+                  CornerRadius="8"
+                  BorderBrush="{StaticResource DdBorderBrush}"
+                  BorderThickness="1">
+            <TextBox Text="{Binding Editor.SqlText, Mode=TwoWay}"
+                     AcceptsReturn="True"
+                     AcceptsTab="True"
+                     FontFamily="Consolas, Menlo, monospace"
+                     FontSize="14"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Foreground="{StaticResource DdTextPrimaryBrush}"
+                     Padding="14,10"
+                     TextWrapping="NoWrap"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+          </Border>
+
+          <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto" Margin="0,12,0,0">
+            <Button Grid.Column="0"
+                    Content="▶  Run"
+                    Padding="20,8"
+                    Background="{StaticResource DdAccentBrush}"
+                    Foreground="#0F1419"
+                    CornerRadius="6"
+                    FontWeight="SemiBold"
+                    FontSize="13"
+                    Command="{Binding Editor.RunCommand}"/>
+
+            <TextBlock Grid.Column="1"
+                       Text="{Binding Editor.ErrorMessage}"
+                       Foreground="{StaticResource DdErrorBrush}"
+                       VerticalAlignment="Center"
+                       FontSize="12"
+                       Margin="16,0"
+                       TextTrimming="CharacterEllipsis"/>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+              <TextBlock Text="{Binding Results.RowCount, StringFormat='{}{0:N0} rows'}"
+                         FontSize="11"
+                         Foreground="{StaticResource DdTextMutedBrush}"/>
+              <TextBlock Text="·" Foreground="{StaticResource DdTextMutedBrush}"/>
+              <TextBlock Text="{Binding Results.ElapsedMs, StringFormat='{}{0} ms'}"
+                         FontSize="11"
+                         Foreground="{StaticResource DdSuccessBrush}"/>
+            </StackPanel>
+          </Grid>
+        </Grid>
+
+        <GridSplitter Grid.Row="1"
+                      Background="Transparent"
+                      ResizeDirection="Rows"
+                      HorizontalAlignment="Stretch"
+                      Height="5"/>
+
+        <!-- ===================================== RESULTS PANE (TABBED) -->
+        <Grid Grid.Row="2" Margin="20,8,20,16">
+          <TabControl Background="Transparent" Padding="0">
+            <TabControl.Styles>
+              <Style Selector="TabItem">
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="MinHeight" Value="36"/>
+              </Style>
+            </TabControl.Styles>
+
+            <!-- ============ TABLE TAB -->
+            <TabItem Header="📊 Table">
+              <Border
+                      Background="{StaticResource DdBgPanelBrush}"
+                      CornerRadius="8"
+                      BorderBrush="{StaticResource DdBorderBrush}"
+                      BorderThickness="1"
+                      Margin="0,8,0,0">
+                <Grid RowDefinitions="Auto,*">
+                  <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="14,10,10,4">
+                    <TextBlock Text="{Binding Results.RowCount, StringFormat='{}{0:N0} rows'}"
+                               VerticalAlignment="Center"
+                               FontSize="11"
+                               Foreground="{StaticResource DdTextMutedBrush}"/>
+                    <Button Grid.Column="1"
+                            Content="📋  Copy as ▾"
+                            Padding="10,4"
+                            FontSize="11"
+                            Background="Transparent"
+                            Foreground="{StaticResource DdTextPrimaryBrush}"
+                            BorderBrush="{StaticResource DdBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            IsVisible="{Binding Results.HasRows}">
+                      <Button.Flyout>
+                        <MenuFlyout>
+                          <MenuItem Header="Copy as CSV"
+                                    Click="OnCopyCsv"/>
+                          <MenuItem Header="Copy as TSV (paste into Excel)"
+                                    Click="OnCopyTsv"/>
+                          <MenuItem Header="Copy as Markdown table"
+                                    Click="OnCopyMarkdown"/>
+                        </MenuFlyout>
+                      </Button.Flyout>
+                    </Button>
+                  </Grid>
+
+                  <Grid Grid.Row="1">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Spacing="12"
+                                IsVisible="{Binding !Results.HasRows}">
+                      <TextBlock Text="🦆" FontSize="48" HorizontalAlignment="Center" Opacity="0.4"/>
+                      <TextBlock Text="Run a query to see results"
+                                 HorizontalAlignment="Center"
+                                 Foreground="{StaticResource DdTextMutedBrush}"
+                                 FontSize="14"/>
+                      <TextBlock Text="Tip: drop a file in the sidebar first"
+                                 HorizontalAlignment="Center"
+                                 Foreground="{StaticResource DdTextMutedBrush}"
+                                 FontSize="12"
+                                 Opacity="0.6"/>
+                    </StackPanel>
+
+                    <DataGrid x:Name="ResultsGrid"
+                              IsVisible="{Binding Results.HasRows}"
+                              ItemsSource="{Binding Results.Rows}"
+                              Background="Transparent"
+                              Foreground="{StaticResource DdTextPrimaryBrush}"
+                              GridLinesVisibility="Horizontal"
+                              HeadersVisibility="Column"
+                              CanUserResizeColumns="True"
+                              CanUserSortColumns="False"
+                              IsReadOnly="True"
+                              AutoGenerateColumns="False"
+                              Margin="0,0,0,4"/>
+                  </Grid>
+                </Grid>
+              </Border>
+            </TabItem>
+
+            <!-- ============ CHART TAB -->
+            <TabItem Header="📈 Chart">
+              <Border
+                      Background="{StaticResource DdBgPanelBrush}"
+                      CornerRadius="8"
+                      BorderBrush="{StaticResource DdBorderBrush}"
+                      BorderThickness="1"
+                      Margin="0,8,0,0">
+                <views:ChartView DataContext="{Binding Chart}"/>
+              </Border>
+            </TabItem>
+
+            <!-- ============ PROFILE TAB -->
+            <TabItem Header="🔍 Profile">
+              <Border
+                      Background="{StaticResource DdBgPanelBrush}"
+                      CornerRadius="8"
+                      BorderBrush="{StaticResource DdBorderBrush}"
+                      BorderThickness="1"
+                      Margin="0,8,0,0"
+                      Padding="16">
+                <Grid RowDefinitions="Auto,Auto,*">
+                  <StackPanel Grid.Row="0" Spacing="2" Margin="0,0,0,12">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding Profile.ActiveFile.Name, FallbackValue='No file selected'}"
+                                 FontSize="14" FontWeight="SemiBold"
+                                 Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                      <ProgressBar Grid.Column="1"
+                                   IsIndeterminate="True"
+                                   Width="80" Height="3"
+                                   IsVisible="{Binding Profile.IsLoading}"/>
+                    </Grid>
+                    <TextBlock Text="Auto-profile of every column. Pick a file in the sidebar to switch."
+                               FontSize="11"
+                               Foreground="{StaticResource DdTextMutedBrush}"/>
+                  </StackPanel>
+
+                  <TextBlock Grid.Row="1"
+                             Text="{Binding Profile.ErrorMessage}"
+                             Foreground="{StaticResource DdErrorBrush}"
+                             FontSize="12"
+                             IsVisible="{Binding Profile.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                             Margin="0,0,0,8"/>
+
+                  <ScrollViewer Grid.Row="2">
+                    <ItemsControl ItemsSource="{Binding Profile.Columns}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="m:ColumnProfile">
+                          <Border BorderBrush="{StaticResource DdBorderBrush}"
+                                  BorderThickness="0,0,0,1"
+                                  Padding="0,10">
+                            <Grid RowDefinitions="Auto,Auto,Auto">
+                              <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                  <TextBlock Text="{Binding ColumnName}"
+                                             FontWeight="SemiBold"
+                                             FontFamily="Consolas, Menlo, monospace"
+                                             FontSize="13"
+                                             Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                                  <Border Background="{StaticResource DdBgHoverBrush}"
+                                          CornerRadius="3" Padding="5,1">
+                                    <TextBlock Text="{Binding DataType}"
+                                               FontSize="10"
+                                               Foreground="{StaticResource DdTextMutedBrush}"/>
+                                  </Border>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding TotalCount, StringFormat='{}{0:N0} rows'}"
+                                           FontSize="11"
+                                           Foreground="{StaticResource DdTextMutedBrush}"
+                                           VerticalAlignment="Center"/>
+                              </Grid>
+
+                              <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="16" Margin="0,2,0,2">
+                                <TextBlock FontSize="11" Foreground="{StaticResource DdTextMutedBrush}">
+                                  <Run Text="distinct: "/>
+                                  <Run Text="{Binding DistinctCount, StringFormat='{}{0:N0}', Mode=OneWay}"
+                                       Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                                </TextBlock>
+                                <TextBlock FontSize="11" Foreground="{StaticResource DdTextMutedBrush}">
+                                  <Run Text="null: "/>
+                                  <Run Text="{Binding NullCount, StringFormat='{}{0:N0}', Mode=OneWay}"
+                                       Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                                </TextBlock>
+                                <TextBlock FontSize="11" Foreground="{StaticResource DdTextMutedBrush}">
+                                  <Run Text="min: "/>
+                                  <Run Text="{Binding MinValue, Mode=OneWay}"
+                                       Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                                </TextBlock>
+                                <TextBlock FontSize="11" Foreground="{StaticResource DdTextMutedBrush}">
+                                  <Run Text="max: "/>
+                                  <Run Text="{Binding MaxValue, Mode=OneWay}"
+                                       Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                                </TextBlock>
+                                <TextBlock FontSize="11" Foreground="{StaticResource DdTextMutedBrush}"
+                                           IsVisible="{Binding Mean, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                  <Run Text="μ: "/>
+                                  <Run Text="{Binding Mean, StringFormat='{}{0:N2}', Mode=OneWay}"
+                                       Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                                </TextBlock>
+                              </StackPanel>
+
+                              <ItemsControl Grid.Row="2"
+                                            ItemsSource="{Binding TopValues}"
+                                            Margin="0,4,0,0">
+                                <ItemsControl.ItemsPanel>
+                                  <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                  </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate DataType="m:TopValue">
+                                    <Border Background="{StaticResource DdBgHoverBrush}"
+                                            CornerRadius="3"
+                                            Padding="6,2">
+                                      <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="{Binding Value}"
+                                                   FontSize="10"
+                                                   Foreground="{StaticResource DdTextPrimaryBrush}"
+                                                   MaxWidth="120"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Count, StringFormat='({0:N0})'}"
+                                                   FontSize="10"
+                                                   Foreground="{StaticResource DdTextMutedBrush}"/>
+                                      </StackPanel>
+                                    </Border>
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                            </Grid>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </Grid>
+              </Border>
+            </TabItem>
+          </TabControl>
+        </Grid>
+      </Grid>
+    </Grid>
+
+    <!-- ============================================================ SETTINGS OVERLAY -->
     <Grid Grid.RowSpan="2"
           ZIndex="100"
           IsVisible="{Binding Settings.IsOpen}"
-          Background="#CC000000">
+          Background="#80000000">
       <Border Width="480"
               VerticalAlignment="Center" HorizontalAlignment="Center"
               Background="{StaticResource DdBgPanelBrush}"
@@ -101,332 +604,258 @@
       </Border>
     </Grid>
 
-    <!-- ======================================================== TOP TOOLBAR -->
-    <Border Grid.Row="0"
-            Background="{StaticResource DdBgPanelBrush}"
-            BorderBrush="{StaticResource DdBorderBrush}"
-            BorderThickness="0,0,0,1">
-      <Grid ColumnDefinitions="Auto,*,Auto" Margin="20,0">
-        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <TextBlock Text="🦆" FontSize="24"/>
-          <TextBlock Text="DataDuck" FontSize="18" FontWeight="SemiBold"
-                     Foreground="{StaticResource DdTextPrimaryBrush}"
-                     VerticalAlignment="Center"/>
-          <Border Background="{StaticResource DdBgHoverBrush}"
-                  CornerRadius="4" Padding="6,2"
-                  Margin="6,0,0,0" VerticalAlignment="Center">
-            <TextBlock Text="v0.1" FontSize="10"
-                       Foreground="{StaticResource DdTextMutedBrush}"/>
-          </Border>
-        </StackPanel>
-
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <Button Content="🎲  Try sample data"
-                  Padding="14,6"
-                  Background="{StaticResource DdAccentBrush}"
-                  Foreground="#0F1419"
-                  CornerRadius="6"
-                  FontWeight="Medium"
-                  Command="{Binding LoadSampleCommand}"/>
-          <Button Content="📂  Open file"
-                  Padding="14,6"
-                  Background="Transparent"
-                  Foreground="{StaticResource DdTextPrimaryBrush}"
-                  BorderBrush="{StaticResource DdBorderBrush}"
-                  BorderThickness="1"
-                  CornerRadius="6"
-                  Command="{Binding OpenFileCommand}"/>
-          <Button Content="⚙"
-                  Padding="10,6"
-                  Background="Transparent"
-                  Foreground="{StaticResource DdTextMutedBrush}"
-                  FontSize="16"
-                  CornerRadius="6"
-                  Command="{Binding Settings.OpenCommand}"/>
-        </StackPanel>
-      </Grid>
-    </Border>
-
-    <!-- ======================================================== MAIN LAYOUT -->
-    <Grid Grid.Row="1" ColumnDefinitions="320,*">
-
-      <!-- ============================================== LEFT SIDEBAR -->
-      <Border Grid.Column="0"
-              Background="{StaticResource DdBgSidebarBrush}"
+    <!-- ============================================================ INSIGHTS OVERLAY -->
+    <Grid Grid.RowSpan="2"
+          ZIndex="100"
+          IsVisible="{Binding Insights.IsOpen}"
+          Background="#80000000">
+      <Border Width="640"
+              MaxHeight="640"
+              VerticalAlignment="Center" HorizontalAlignment="Center"
+              Background="{StaticResource DdBgPanelBrush}"
               BorderBrush="{StaticResource DdBorderBrush}"
-              BorderThickness="0,0,1,0">
-
-        <Grid RowDefinitions="Auto,*,Auto,*">
-
-          <!-- FILES section header -->
-          <StackPanel Grid.Row="0" Margin="16,16,16,8" Spacing="2">
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="FILES" FontSize="11" FontWeight="Bold" LetterSpacing="1"
-                         Foreground="{StaticResource DdTextMutedBrush}"/>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding Files.Files.Count, StringFormat='{}{0}'}"
-                         FontSize="11"
-                         Foreground="{StaticResource DdTextMutedBrush}"
-                         Opacity="0.7"/>
-            </Grid>
-            <TextBlock Text="Drop a CSV / Parquet / JSONL"
-                       FontSize="11"
-                       Foreground="{StaticResource DdTextMutedBrush}"
-                       Opacity="0.6"/>
-          </StackPanel>
-
-          <!-- FILES list -->
-          <ListBox Grid.Row="1"
-                   Background="Transparent"
-                   BorderThickness="0"
-                   Padding="8,0"
-                   ItemsSource="{Binding Files.Files}">
-            <ListBox.Styles>
-              <Style Selector="ListBoxItem">
-                <Setter Property="Padding" Value="8,6"/>
-                <Setter Property="CornerRadius" Value="4"/>
-                <Setter Property="Margin" Value="0,1"/>
-              </Style>
-            </ListBox.Styles>
-            <ListBox.ItemTemplate>
-              <DataTemplate DataType="m:LoadedFile">
-                <StackPanel Spacing="2">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="📄" FontSize="12" Opacity="0.7"/>
-                    <TextBlock Text="{Binding Name}"
-                               FontWeight="Medium" FontSize="13"
-                               Foreground="{StaticResource DdTextPrimaryBrush}"/>
-                  </StackPanel>
-                  <StackPanel Orientation="Horizontal" Spacing="6" Margin="18,0,0,0">
-                    <TextBlock Text="{Binding RowCount, StringFormat='{}{0:N0} rows'}"
-                               FontSize="11"
-                               Foreground="{StaticResource DdTextMutedBrush}"/>
-                    <TextBlock Text="·" Foreground="{StaticResource DdTextMutedBrush}"/>
-                    <TextBlock Text="{Binding TableName}"
-                               FontFamily="Consolas, Menlo, monospace"
-                               FontSize="11"
-                               Foreground="{StaticResource DdAccentBrush}"
-                               Opacity="0.85"/>
-                  </StackPanel>
-                </StackPanel>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-
-          <!-- HISTORY section header -->
-          <StackPanel Grid.Row="2" Margin="16,16,16,8" Spacing="2">
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="QUERY HISTORY" FontSize="11" FontWeight="Bold" LetterSpacing="1"
-                         Foreground="{StaticResource DdTextMutedBrush}"/>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding History.Items.Count, StringFormat='{}{0}'}"
-                         FontSize="11"
-                         Foreground="{StaticResource DdTextMutedBrush}"
-                         Opacity="0.7"/>
-            </Grid>
-          </StackPanel>
-
-          <!-- HISTORY list -->
-          <ListBox Grid.Row="3"
-                   Background="Transparent"
-                   BorderThickness="0"
-                   Padding="8,0"
-                   ItemsSource="{Binding History.Items}"
-                   SelectionChanged="OnHistorySelectionChanged">
-            <ListBox.Styles>
-              <Style Selector="ListBoxItem">
-                <Setter Property="Padding" Value="8,6"/>
-                <Setter Property="CornerRadius" Value="4"/>
-                <Setter Property="Margin" Value="0,1"/>
-              </Style>
-            </ListBox.Styles>
-            <ListBox.ItemTemplate>
-              <DataTemplate DataType="m:SavedQuery">
-                <StackPanel Spacing="2">
-                  <TextBlock Text="{Binding Sql}"
-                             TextTrimming="CharacterEllipsis"
-                             FontFamily="Consolas, Menlo, monospace"
-                             FontSize="12"
-                             Foreground="{StaticResource DdTextPrimaryBrush}"/>
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="{Binding ElapsedMs, StringFormat='{}{0} ms'}"
-                               FontSize="10"
-                               Foreground="{StaticResource DdSuccessBrush}"/>
-                    <TextBlock Text="·" FontSize="10"
-                               Foreground="{StaticResource DdTextMutedBrush}"/>
-                    <TextBlock Text="{Binding When, StringFormat='{}{0:HH:mm:ss}'}"
-                               FontSize="10"
-                               Foreground="{StaticResource DdTextMutedBrush}"/>
-                  </StackPanel>
-                </StackPanel>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </Grid>
-      </Border>
-
-      <!-- ============================================== CENTER CONTENT -->
-      <Grid Grid.Column="1" RowDefinitions="*,5,*">
-
-        <!-- ===================================== SQL EDITOR PANE -->
-        <Grid Grid.Row="0" RowDefinitions="Auto,Auto,*,Auto" Margin="20,16,20,8">
-
-          <!-- Ask in English bar -->
-          <Border Grid.Row="0"
-                  Background="{StaticResource DdBgPanelBrush}"
-                  CornerRadius="8"
-                  BorderBrush="{StaticResource DdBorderBrush}"
-                  BorderThickness="1"
-                  Padding="14,4">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-              <TextBlock Text="✨" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0"
-                         Foreground="{StaticResource DdAccentBrush}"/>
-              <TextBox Grid.Column="1"
-                       Text="{Binding Editor.EnglishQuestion, Mode=TwoWay}"
-                       PlaceholderText="Ask in English (e.g. 'top 10 customers by revenue')"
-                       Background="Transparent"
-                       BorderThickness="0"
-                       FontSize="13"
-                       Foreground="{StaticResource DdTextPrimaryBrush}"/>
-              <Button Grid.Column="2"
-                      Content="Generate SQL"
-                      Padding="12,6"
-                      CornerRadius="4"
-                      Background="{StaticResource DdAccentBrush}"
-                      Foreground="#0F1419"
-                      FontWeight="Medium"
-                      FontSize="12"
-                      Command="{Binding Editor.GenerateSqlCommand}"/>
-            </Grid>
-          </Border>
-
-          <!-- SQL section label -->
-          <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="2,16,0,6">
-            <TextBlock Text="SQL"
-                       FontSize="11" FontWeight="Bold" LetterSpacing="1"
-                       Foreground="{StaticResource DdTextMutedBrush}"/>
-            <TextBlock Text="Ctrl+Enter to run"
-                       FontSize="11"
-                       Foreground="{StaticResource DdTextMutedBrush}"
-                       Opacity="0.6"/>
-          </StackPanel>
-
-          <!-- SQL editor -->
-          <Border Grid.Row="2"
-                  Background="{StaticResource DdBgPanelBrush}"
-                  CornerRadius="8"
-                  BorderBrush="{StaticResource DdBorderBrush}"
-                  BorderThickness="1">
-            <TextBox Text="{Binding Editor.SqlText, Mode=TwoWay}"
-                     AcceptsReturn="True"
-                     AcceptsTab="True"
-                     FontFamily="Consolas, Menlo, monospace"
-                     FontSize="14"
-                     Background="Transparent"
-                     BorderThickness="0"
-                     Foreground="{StaticResource DdTextPrimaryBrush}"
-                     Padding="14,10"
-                     TextWrapping="NoWrap"
-                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-          </Border>
-
-          <!-- Run button + status row -->
-          <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto" Margin="0,12,0,0">
-            <Button Grid.Column="0"
-                    Content="▶  Run"
-                    Padding="20,8"
-                    Background="{StaticResource DdAccentBrush}"
-                    Foreground="#0F1419"
-                    CornerRadius="6"
-                    FontWeight="SemiBold"
-                    FontSize="13"
-                    Command="{Binding Editor.RunCommand}"/>
-
-            <TextBlock Grid.Column="1"
-                       Text="{Binding Editor.ErrorMessage}"
-                       Foreground="{StaticResource DdErrorBrush}"
-                       VerticalAlignment="Center"
-                       FontSize="12"
-                       Margin="16,0"
-                       TextTrimming="CharacterEllipsis"/>
-
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-              <TextBlock Text="{Binding Results.RowCount, StringFormat='{}{0:N0} rows'}"
+              BorderThickness="1"
+              CornerRadius="10"
+              Padding="24">
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+          <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+            <TextBlock Text="✨"
+                       FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"
+                       Foreground="{StaticResource DdAccentBrush}"/>
+            <StackPanel Grid.Column="1" Spacing="2">
+              <TextBlock Text="What's interesting about this data"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{StaticResource DdTextPrimaryBrush}"/>
+              <TextBlock Text="Auto-generated by Groq from your active table"
                          FontSize="11"
                          Foreground="{StaticResource DdTextMutedBrush}"/>
-              <TextBlock Text="·" Foreground="{StaticResource DdTextMutedBrush}"/>
-              <TextBlock Text="{Binding Results.ElapsedMs, StringFormat='{}{0} ms'}"
-                         FontSize="11"
-                         Foreground="{StaticResource DdSuccessBrush}"/>
             </StackPanel>
-          </Grid>
-        </Grid>
-
-        <!-- Splitter between editor and results -->
-        <GridSplitter Grid.Row="1"
-                      Background="Transparent"
-                      ResizeDirection="Rows"
-                      HorizontalAlignment="Stretch"
-                      Height="5"/>
-
-        <!-- ===================================== RESULTS PANE -->
-        <Grid Grid.Row="2" RowDefinitions="Auto,*" Margin="20,8,20,16">
-          <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8">
-            <TextBlock Text="RESULTS" FontSize="11" FontWeight="Bold" LetterSpacing="1"
-                       Foreground="{StaticResource DdTextMutedBrush}"
-                       VerticalAlignment="Center"/>
             <Button Grid.Column="2"
-                    Content="📋 Copy as CSV"
-                    Padding="10,4"
+                    Content="✕"
+                    Padding="8,2"
                     Background="Transparent"
                     Foreground="{StaticResource DdTextMutedBrush}"
-                    BorderBrush="{StaticResource DdBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4"
-                    FontSize="11"
-                    IsVisible="{Binding Results.HasRows}"/>
+                    Command="{Binding Insights.CloseCommand}"/>
           </Grid>
 
-          <Border Grid.Row="1"
-                  Background="{StaticResource DdBgPanelBrush}"
-                  CornerRadius="8"
+          <ProgressBar Grid.Row="1"
+                       IsIndeterminate="True"
+                       Margin="0,16,0,0"
+                       Height="3"
+                       IsVisible="{Binding Insights.IsLoading}"/>
+
+          <ScrollViewer Grid.Row="2" Margin="0,16,0,0">
+            <StackPanel Spacing="14">
+              <TextBlock Text="{Binding Insights.ErrorMessage}"
+                         Foreground="{StaticResource DdErrorBrush}"
+                         FontSize="12"
+                         TextWrapping="Wrap"
+                         IsVisible="{Binding Insights.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+              <TextBlock Text="{Binding Insights.Summary}"
+                         FontSize="14" LineHeight="22"
+                         Foreground="{StaticResource DdTextPrimaryBrush}"
+                         TextWrapping="Wrap"
+                         IsVisible="{Binding Insights.Summary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+              <ItemsControl ItemsSource="{Binding Insights.Findings}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="Auto,*" Margin="0,4">
+                      <TextBlock Text="•"
+                                 FontSize="14"
+                                 Foreground="{StaticResource DdAccentBrush}"
+                                 VerticalAlignment="Top"
+                                 Margin="0,0,8,0"/>
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding}"
+                                 FontSize="13"
+                                 LineHeight="20"
+                                 Foreground="{StaticResource DdTextPrimaryBrush}"
+                                 TextWrapping="Wrap"/>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <StackPanel Spacing="6"
+                          IsVisible="{Binding Insights.SuggestedQueries.Count, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Text="SUGGESTED QUERIES"
+                           FontSize="11" FontWeight="Bold" LetterSpacing="1"
+                           Foreground="{StaticResource DdTextMutedBrush}"
+                           Margin="0,8,0,4"/>
+
+                <ItemsControl ItemsSource="{Binding Insights.SuggestedQueries}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="m:SuggestedQuery">
+                      <Button Command="{Binding ((vm:MainViewModel)DataContext).Insights.RunSuggestedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              CommandParameter="{Binding}"
+                              Background="{StaticResource DdBgSidebarBrush}"
+                              BorderBrush="{StaticResource DdBorderBrush}"
+                              BorderThickness="1"
+                              CornerRadius="6"
+                              Padding="12,10"
+                              HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Stretch"
+                              Margin="0,3">
+                        <StackPanel Spacing="4">
+                          <TextBlock Text="{Binding Title}"
+                                     FontWeight="SemiBold"
+                                     FontSize="13"
+                                     Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                          <TextBlock Text="{Binding Sql}"
+                                     FontFamily="Consolas, Menlo, monospace"
+                                     FontSize="11"
+                                     Foreground="{StaticResource DdTextMutedBrush}"
+                                     TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+
+          <Button Grid.Row="3"
+                  Content="Close"
+                  HorizontalAlignment="Right"
+                  Padding="18,6"
+                  Margin="0,16,0,0"
+                  Background="Transparent"
+                  Foreground="{StaticResource DdTextMutedBrush}"
                   BorderBrush="{StaticResource DdBorderBrush}"
-                  BorderThickness="1">
+                  BorderThickness="1"
+                  CornerRadius="4"
+                  Command="{Binding Insights.CloseCommand}"/>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- ============================================================ JOIN BUILDER OVERLAY -->
+    <Grid Grid.RowSpan="2"
+          ZIndex="100"
+          IsVisible="{Binding JoinBuilder.IsOpen}"
+          Background="#80000000">
+      <Border Width="640"
+              MaxHeight="600"
+              VerticalAlignment="Center" HorizontalAlignment="Center"
+              Background="{StaticResource DdBgPanelBrush}"
+              BorderBrush="{StaticResource DdBorderBrush}"
+              BorderThickness="1"
+              CornerRadius="10"
+              Padding="24">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+            <TextBlock Text="🔗"
+                       FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <StackPanel Grid.Column="1" Spacing="2">
+              <TextBlock Text="JOIN suggestions"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{StaticResource DdTextPrimaryBrush}"/>
+              <TextBlock Text="Detected matches across loaded files. Click to insert SQL into the editor."
+                         FontSize="11"
+                         Foreground="{StaticResource DdTextMutedBrush}"/>
+            </StackPanel>
+            <Button Grid.Column="2"
+                    Content="✕"
+                    Padding="8,2"
+                    Background="Transparent"
+                    Foreground="{StaticResource DdTextMutedBrush}"
+                    Command="{Binding JoinBuilder.CloseCommand}"/>
+          </Grid>
+
+          <ScrollViewer Grid.Row="1" Margin="0,12,0,0">
             <Grid>
-              <!-- Empty state -->
               <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                          Spacing="12"
-                          IsVisible="{Binding !Results.HasRows}">
-                <TextBlock Text="🦆" FontSize="48" HorizontalAlignment="Center" Opacity="0.4"/>
-                <TextBlock Text="Run a query to see results"
+                          Spacing="6"
+                          IsVisible="{Binding !JoinBuilder.HasSuggestions}">
+                <TextBlock Text="No JOIN candidates"
                            HorizontalAlignment="Center"
                            Foreground="{StaticResource DdTextMutedBrush}"
                            FontSize="14"/>
-                <TextBlock Text="Tip: drop a file in the sidebar first"
+                <TextBlock Text="Load at least 2 files with matching columns (e.g. id ↔ customer_id)"
                            HorizontalAlignment="Center"
                            Foreground="{StaticResource DdTextMutedBrush}"
-                           FontSize="12"
-                           Opacity="0.6"/>
+                           Opacity="0.7"
+                           FontSize="11"
+                           TextWrapping="Wrap"
+                           MaxWidth="400"/>
               </StackPanel>
 
-              <!-- Results DataGrid — columns are rebuilt by code-behind on each query
-                   (rows are object?[] indexed by column position; bind via "[N]"). -->
-              <DataGrid x:Name="ResultsGrid"
-                        IsVisible="{Binding Results.HasRows}"
-                        ItemsSource="{Binding Results.Rows}"
-                        Background="Transparent"
-                        Foreground="{StaticResource DdTextPrimaryBrush}"
-                        GridLinesVisibility="Horizontal"
-                        HeadersVisibility="Column"
-                        CanUserResizeColumns="True"
-                        CanUserSortColumns="False"
-                        IsReadOnly="True"
-                        AutoGenerateColumns="False"/>
+              <ItemsControl ItemsSource="{Binding JoinBuilder.Suggestions}"
+                            IsVisible="{Binding JoinBuilder.HasSuggestions}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="m:JoinSuggestion">
+                    <Button Command="{Binding ((vm:MainViewModel)DataContext).JoinBuilder.ChooseCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}"
+                            Background="{StaticResource DdBgSidebarBrush}"
+                            BorderBrush="{StaticResource DdBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="14,10"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Margin="0,3">
+                      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+                        <StackPanel Orientation="Horizontal" Spacing="6" Grid.Row="0">
+                          <TextBlock Text="{Binding LeftTable}"
+                                     FontFamily="Consolas, Menlo, monospace"
+                                     FontWeight="SemiBold"
+                                     Foreground="{StaticResource DdAccentBrush}"/>
+                          <TextBlock Text="."
+                                     Foreground="{StaticResource DdTextMutedBrush}"/>
+                          <TextBlock Text="{Binding LeftColumn}"
+                                     FontFamily="Consolas, Menlo, monospace"
+                                     Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                          <TextBlock Text="↔"
+                                     Foreground="{StaticResource DdTextMutedBrush}"
+                                     Margin="6,0"/>
+                          <TextBlock Text="{Binding RightTable}"
+                                     FontFamily="Consolas, Menlo, monospace"
+                                     FontWeight="SemiBold"
+                                     Foreground="{StaticResource DdAccentBrush}"/>
+                          <TextBlock Text="."
+                                     Foreground="{StaticResource DdTextMutedBrush}"/>
+                          <TextBlock Text="{Binding RightColumn}"
+                                     FontFamily="Consolas, Menlo, monospace"
+                                     Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                        </StackPanel>
+                        <Border Grid.Row="0" Grid.Column="1"
+                                Background="{StaticResource DdBgHoverBrush}"
+                                CornerRadius="3" Padding="6,1">
+                          <TextBlock Text="{Binding Confidence, StringFormat='{}{0:P0}'}"
+                                     FontSize="10"
+                                     Foreground="{StaticResource DdTextMutedBrush}"/>
+                        </Border>
+                        <TextBlock Grid.Row="1" Grid.ColumnSpan="2"
+                                   Text="{Binding GeneratedSql}"
+                                   FontFamily="Consolas, Menlo, monospace"
+                                   FontSize="10"
+                                   Foreground="{StaticResource DdTextMutedBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   Margin="0,4,0,0"/>
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
             </Grid>
-          </Border>
+          </ScrollViewer>
+
+          <Button Grid.Row="2"
+                  Content="Close"
+                  HorizontalAlignment="Right"
+                  Padding="18,6"
+                  Margin="0,12,0,0"
+                  Background="Transparent"
+                  Foreground="{StaticResource DdTextMutedBrush}"
+                  BorderBrush="{StaticResource DdBorderBrush}"
+                  BorderThickness="1"
+                  CornerRadius="4"
+                  Command="{Binding JoinBuilder.CloseCommand}"/>
         </Grid>
-      </Grid>
+      </Border>
     </Grid>
   </Grid>
 </UserControl>

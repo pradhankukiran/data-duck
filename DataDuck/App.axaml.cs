@@ -48,11 +48,16 @@ public partial class App : Application
         services.AddSingleton<ResultsViewModel>();
         services.AddSingleton<QueryHistoryViewModel>();
         services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<ChartViewModel>();
+        services.AddSingleton<InsightsViewModel>();
+        services.AddSingleton<ProfileViewModel>();
+        services.AddSingleton<JoinBuilderViewModel>();
+        services.AddSingleton<ExportCommandsViewModel>();
     }
 
     private static void ConfigureSharedServices(IServiceCollection services)
     {
-        // Cross-platform service implementations land here in later phases.
+        services.AddSingleton<DataDuck.Services.IProfilingService, DataDuck.Services.ProfilingService>();
     }
 
     /// <summary>

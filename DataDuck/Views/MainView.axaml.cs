@@ -1,10 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Data;
+using Avalonia.Data.Converters;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using DataDuck.Models;
 using DataDuck.Services;
@@ -19,7 +27,6 @@ public partial class MainView : UserControl
     public MainView()
     {
         InitializeComponent();
-
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
     }
@@ -41,14 +48,10 @@ public partial class MainView : UserControl
     {
         if (DataContext is not MainViewModel vm) return;
         if (_subscribedResults == vm.Results) return;
-
         if (_subscribedResults is not null)
             _subscribedResults.ColumnsChanged -= RebuildColumns;
-
         _subscribedResults = vm.Results;
         _subscribedResults.ColumnsChanged += RebuildColumns;
-
-        // Initial build in case results loaded before view attached.
         RebuildColumns(_subscribedResults.ColumnNames);
     }
 
@@ -58,10 +61,24 @@ public partial class MainView : UserControl
         ResultsGrid.Columns.Clear();
         for (var i = 0; i < columns.Count; i++)
         {
-            ResultsGrid.Columns.Add(new DataGridTextColumn
+            var idx = i;
+            ResultsGrid.Columns.Add(new DataGridTemplateColumn
             {
                 Header = columns[i],
-                Binding = new Binding($"[{i}]"),
+                CellTemplate = new FuncDataTemplate<object?[]>((_, _) =>
+                {
+                    var tb = new TextBlock
+                    {
+                        Margin = new Thickness(8, 4),
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
+                    tb.Bind(TextBlock.TextProperty, new Binding($"[{idx}]"));
+                    tb.Bind(TextBlock.ForegroundProperty, new Binding($"[{idx}]")
+                    {
+                        Converter = NegativeNumberToRedConverter.Instance,
+                    });
+                    return tb;
+                }, supportsRecycling: true),
                 IsReadOnly = true,
             });
         }
@@ -77,10 +94,8 @@ public partial class MainView : UserControl
     private async void OnDrop(object? sender, DragEventArgs e)
     {
         if (DataContext is not MainViewModel vm) return;
-
         var items = e.DataTransfer.TryGetFiles();
         if (items is null) return;
-
         foreach (var item in items.OfType<IStorageFile>())
         {
             var uploaded = await StorageProviderFileService.ReadAsync(item);
@@ -94,6 +109,51 @@ public partial class MainView : UserControl
         if (sender is not ListBox lb) return;
         if (lb.SelectedItem is not SavedQuery q) return;
         vm.History.Select(q);
-        lb.SelectedItem = null;  // re-clicking the same row should re-load it
+        lb.SelectedItem = null;
     }
+
+    private async void OnCopyCsv(object? sender, RoutedEventArgs e) =>
+        await CopyAsync(vm => vm.Export.CopyCsv());
+    private async void OnCopyTsv(object? sender, RoutedEventArgs e) =>
+        await CopyAsync(vm => vm.Export.CopyTsv());
+    private async void OnCopyMarkdown(object? sender, RoutedEventArgs e) =>
+        await CopyAsync(vm => vm.Export.CopyMarkdown());
+
+    private async Task CopyAsync(Func<MainViewModel, string> getter)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        var text = getter(vm);
+        var top = TopLevel.GetTopLevel(this);
+        if (top?.Clipboard is null) return;
+        await top.Clipboard.SetTextAsync(text);
+    }
+}
+
+internal sealed class NegativeNumberToRedConverter : IValueConverter
+{
+    public static readonly NegativeNumberToRedConverter Instance = new();
+    private static readonly IBrush Red = new SolidColorBrush(Color.FromRgb(220, 38, 38));
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var d = ToDouble(value);
+        if (double.IsNaN(d)) return AvaloniaProperty.UnsetValue;
+        return d < 0 ? Red : AvaloniaProperty.UnsetValue;
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+
+    private static double ToDouble(object? v) => v switch
+    {
+        null => double.NaN,
+        double d => d,
+        float f => f,
+        long l => l,
+        int i => i,
+        short s => s,
+        decimal m => (double)m,
+        string str when double.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var p) => p,
+        _ => double.NaN,
+    };
 }
