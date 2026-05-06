@@ -82,6 +82,24 @@
         <div class="progress"></div>
     </div>
 </div>
+<script>
+    // Avalonia mounts its canvas as a sibling of the splash inside #out.
+    // The splash is position:absolute and would otherwise sit on top forever.
+    // Drop it the moment a non-splash child appears.
+    (() => {
+        const out = document.getElementById('out');
+        const splash = out && out.querySelector('.dataduck-splash');
+        if (!out || !splash) return;
+        const obs = new MutationObserver(() => {
+            const other = Array.from(out.children).some(c => c !== splash);
+            if (other) {
+                splash.remove();
+                obs.disconnect();
+            }
+        });
+        obs.observe(out, { childList: true });
+    })();
+</script>
 <script type='module' src="./main.js"></script>
 </body>
 
