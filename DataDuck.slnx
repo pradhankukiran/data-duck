@@ -1,0 +1,5 @@
+﻿<Solution>
+  <Project Path="DataDuck/DataDuck.csproj" />
+  <Project Path="DataDuck.Desktop/DataDuck.Desktop.csproj" />
+  <Project Path="DataDuck.Browser/DataDuck.Browser.csproj" />
+</Solution>
