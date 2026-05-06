@@ -96,5 +96,119 @@
         </ItemsControl>
       </ScrollViewer>
     </Grid>
+
+    <!-- Line chart -->
+    <Grid IsVisible="{Binding IsLineChart}" Margin="20" RowDefinitions="Auto,*">
+      <StackPanel Grid.Row="0" Spacing="2" Margin="0,0,0,12">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <TextBlock Text="{Binding ValueColumn}"
+                     FontSize="13" FontWeight="SemiBold"
+                     Foreground="{StaticResource DdTextPrimaryBrush}"/>
+          <TextBlock Text="over"
+                     FontSize="13"
+                     Foreground="{StaticResource DdTextMutedBrush}"/>
+          <TextBlock Text="{Binding CategoryColumn}"
+                     FontSize="13" FontWeight="SemiBold"
+                     Foreground="{StaticResource DdTextPrimaryBrush}"/>
+        </StackPanel>
+        <TextBlock Text="auto-detected from query result"
+                   FontSize="10"
+                   Foreground="{StaticResource DdTextMutedBrush}"
+                   Opacity="0.7"/>
+      </StackPanel>
+
+      <Grid Grid.Row="1" ColumnDefinitions="48,*" RowDefinitions="*,20">
+        <!-- Y axis labels -->
+        <Grid Grid.Column="0" Grid.Row="0" Margin="0,0,4,0">
+          <TextBlock Text="{Binding LineYAxisMax}"
+                     HorizontalAlignment="Right" VerticalAlignment="Top"
+                     FontSize="10" FontFamily="Consolas, Menlo, monospace"
+                     Foreground="{StaticResource DdTextMutedBrush}"/>
+          <TextBlock Text="{Binding LineYAxisMin}"
+                     HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                     FontSize="10" FontFamily="Consolas, Menlo, monospace"
+                     Foreground="{StaticResource DdTextMutedBrush}"/>
+        </Grid>
+
+        <!-- Plot area -->
+        <Border Grid.Column="1" Grid.Row="0"
+                BorderBrush="{StaticResource DdBorderBrush}"
+                BorderThickness="0,0,0,1">
+          <Canvas Name="LineCanvas"
+                  Background="Transparent"
+                  ClipToBounds="True"/>
+        </Border>
+
+        <!-- X axis labels -->
+        <Grid Grid.Column="1" Grid.Row="1" Margin="0,4,0,0">
+          <TextBlock Text="{Binding LineXAxisMin}"
+                     HorizontalAlignment="Left" VerticalAlignment="Top"
+                     FontSize="10" FontFamily="Consolas, Menlo, monospace"
+                     Foreground="{StaticResource DdTextMutedBrush}"/>
+          <TextBlock Text="{Binding LineXAxisMax}"
+                     HorizontalAlignment="Right" VerticalAlignment="Top"
+                     FontSize="10" FontFamily="Consolas, Menlo, monospace"
+                     Foreground="{StaticResource DdTextMutedBrush}"/>
+        </Grid>
+      </Grid>
+    </Grid>
+
+    <!-- Pie chart -->
+    <Grid IsVisible="{Binding IsPieChart}" Margin="20" RowDefinitions="Auto,*">
+      <StackPanel Grid.Row="0" Spacing="2" Margin="0,0,0,12">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <TextBlock Text="{Binding ValueColumn}"
+                     FontSize="13" FontWeight="SemiBold"
+                     Foreground="{StaticResource DdTextPrimaryBrush}"/>
+          <TextBlock Text="by"
+                     FontSize="13"
+                     Foreground="{StaticResource DdTextMutedBrush}"/>
+          <TextBlock Text="{Binding CategoryColumn}"
+                     FontSize="13" FontWeight="SemiBold"
+                     Foreground="{StaticResource DdTextPrimaryBrush}"/>
+        </StackPanel>
+        <TextBlock Text="auto-detected from query result"
+                   FontSize="10"
+                   Foreground="{StaticResource DdTextMutedBrush}"
+                   Opacity="0.7"/>
+      </StackPanel>
+
+      <Grid Grid.Row="1" ColumnDefinitions="*,200">
+        <Canvas Name="PieCanvas"
+                Grid.Column="0"
+                Background="Transparent"
+                ClipToBounds="True"/>
+
+        <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled" Margin="12,0,0,0">
+          <ItemsControl ItemsSource="{Binding PieSlices}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="m:PieSlice">
+                <Grid ColumnDefinitions="14,*,Auto" Height="22" Margin="0,2">
+                  <Border Grid.Column="0"
+                          Width="12" Height="12"
+                          CornerRadius="2"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Left"
+                          Background="{Binding ColorHex}"/>
+                  <TextBlock Grid.Column="1"
+                             Text="{Binding Label}"
+                             VerticalAlignment="Center"
+                             Margin="6,0,6,0"
+                             Foreground="{StaticResource DdTextPrimaryBrush}"
+                             FontSize="12"
+                             TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Grid.Column="2"
+                             Text="{Binding Percent, StringFormat={}{0:0.#}%}"
+                             VerticalAlignment="Center"
+                             Foreground="{StaticResource DdTextMutedBrush}"
+                             FontFamily="Consolas, Menlo, monospace"
+                             FontSize="11"/>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+    </Grid>
   </Grid>
 </UserControl>
