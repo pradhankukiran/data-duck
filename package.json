@@ -1,0 +1,13 @@
+{
+  "name": "dataduck",
+  "version": "0.0.0",
+  "private": true,
+  "description": "DuckDB-WASM asset dependencies for the DataDuck browser project.",
+  "type": "module",
+  "scripts": {
+    "copy-duckdb": "node scripts/copy-duckdb.mjs"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.32.0"
+  }
+}
