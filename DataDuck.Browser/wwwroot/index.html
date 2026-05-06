@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>DataDuck — Browser-based SQL data lab</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Drop a CSV into your browser, run SQL on it instantly with DuckDB-WASM. Optionally translate English to SQL with Groq AI. Nothing uploads — your data stays local.">
+    <meta name="theme-color" content="#0F1419">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="DataDuck — Browser-based SQL data lab">
+    <meta property="og:description" content="Drop a CSV, run SQL on it instantly with DuckDB-WASM. English-to-SQL via Groq. All client-side.">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="DataDuck">
+    <meta name="twitter:description" content="Browser-based SQL data lab — DuckDB-WASM + Groq AI.">
+
+    <link rel="icon" href="./favicon.ico">
+    <link rel="stylesheet" href="./app.css" />
+
+    <style>
+        body {
+            margin: 0;
+            background: #0F1419;
+            color: #E5E7EB;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+        }
+        .dataduck-splash {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+        .dataduck-splash .logo {
+            font-size: 64px;
+        }
+        .dataduck-splash .name {
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        .dataduck-splash .tag {
+            font-size: 14px;
+            color: #9CA3AF;
+        }
+        .dataduck-splash .progress {
+            margin-top: 24px;
+            width: 240px;
+            height: 3px;
+            border-radius: 2px;
+            background: #1A2027;
+            overflow: hidden;
+            position: relative;
+        }
+        .dataduck-splash .progress::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, #F4C430, transparent);
+            animation: slide 1.4s ease-in-out infinite;
+        }
+        @keyframes slide {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+    </style>
+</head>
+
+<body>
+<div id="out">
+    <div class="dataduck-splash">
+        <div class="logo">🦆</div>
+        <div class="name">DataDuck</div>
+        <div class="tag">Booting WebAssembly runtime…</div>
+        <div class="progress"></div>
+    </div>
+</div>
+<script type='module' src="./main.js"></script>
+</body>
+
+</html>
