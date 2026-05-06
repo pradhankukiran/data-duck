@@ -44,7 +44,9 @@ public partial class App : Application
     {
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<FileListViewModel>();
-        services.AddSingleton<SqlEditorViewModel>();
+        services.AddTransient<SqlEditorViewModel>();
+        services.AddSingleton<Func<SqlEditorViewModel>>(sp => () => sp.GetRequiredService<SqlEditorViewModel>());
+        services.AddSingleton<SqlEditorTabsViewModel>();
         services.AddSingleton<ResultsViewModel>();
         services.AddSingleton<QueryHistoryViewModel>();
         services.AddSingleton<SettingsViewModel>();
@@ -53,6 +55,7 @@ public partial class App : Application
         services.AddSingleton<ProfileViewModel>();
         services.AddSingleton<JoinBuilderViewModel>();
         services.AddSingleton<ExportCommandsViewModel>();
+        services.AddSingleton<DashboardViewModel>();
     }
 
     private static void ConfigureSharedServices(IServiceCollection services)

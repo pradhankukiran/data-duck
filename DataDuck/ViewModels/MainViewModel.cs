@@ -17,7 +17,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly HttpClient? _http;
 
     public FileListViewModel Files { get; }
-    public SqlEditorViewModel Editor { get; }
+    public SqlEditorTabsViewModel EditorTabs { get; }
     public ResultsViewModel Results { get; }
     public QueryHistoryViewModel History { get; }
     public SettingsViewModel Settings { get; }
@@ -26,6 +26,10 @@ public partial class MainViewModel : ViewModelBase
     public ProfileViewModel Profile { get; }
     public JoinBuilderViewModel JoinBuilder { get; }
     public ExportCommandsViewModel Export { get; }
+    public DashboardViewModel Dashboard { get; }
+
+    /// <summary>Convenience accessor to the active tab's editor (may be null briefly during refresh).</summary>
+    public SqlEditorViewModel? ActiveEditor => EditorTabs.Active?.Editor;
 
     [ObservableProperty]
     private bool _isLoadingFile;
@@ -38,7 +42,7 @@ public partial class MainViewModel : ViewModelBase
 
     public MainViewModel(
         FileListViewModel files,
-        SqlEditorViewModel editor,
+        SqlEditorTabsViewModel editorTabs,
         ResultsViewModel results,
         QueryHistoryViewModel history,
         SettingsViewModel settings,
@@ -47,13 +51,14 @@ public partial class MainViewModel : ViewModelBase
         ProfileViewModel profile,
         JoinBuilderViewModel joinBuilder,
         ExportCommandsViewModel export,
+        DashboardViewModel dashboard,
         IFileService? fileService = null,
         IDuckDbService? duckDb = null,
         IAiService? ai = null,
         HttpClient? http = null)
     {
         Files = files;
-        Editor = editor;
+        EditorTabs = editorTabs;
         Results = results;
         History = history;
         Settings = settings;
@@ -62,21 +67,22 @@ public partial class MainViewModel : ViewModelBase
         Profile = profile;
         JoinBuilder = joinBuilder;
         Export = export;
+        Dashboard = dashboard;
         _fileService = fileService;
         _duckDb = duckDb;
         _ai = ai;
         _http = http;
 
-        History.QuerySelected += q => Editor.SqlText = q.Sql;
+        History.QuerySelected += q => SetEditorText(q.Sql);
         Insights.QueryRunRequested += q =>
         {
-            Editor.SqlText = q.Sql;
-            if (Editor.RunCommand.CanExecute(null)) Editor.RunCommand.Execute(null);
+            SetEditorText(q.Sql);
+            var editor = EditorTabs.Active?.Editor;
+            if (editor is not null && editor.RunCommand.CanExecute(null))
+                editor.RunCommand.Execute(null);
         };
-        JoinBuilder.JoinChosen += join =>
-        {
-            Editor.SqlText = join.GeneratedSql;
-        };
+        JoinBuilder.JoinChosen += join => SetEditorText(join.GeneratedSql);
+
         Files.Files.CollectionChanged += (_, _) =>
         {
             if (ActiveFile is null && Files.Files.Count > 0)
@@ -85,10 +91,9 @@ public partial class MainViewModel : ViewModelBase
         };
     }
 
-    // Design-time only — gives the XAML previewer something to bind to.
     public MainViewModel() : this(
         new FileListViewModel(),
-        new SqlEditorViewModel(),
+        new SqlEditorTabsViewModel(),
         new ResultsViewModel(),
         new QueryHistoryViewModel(),
         new SettingsViewModel(),
@@ -96,8 +101,16 @@ public partial class MainViewModel : ViewModelBase
         new InsightsViewModel(),
         new ProfileViewModel(),
         new JoinBuilderViewModel(),
-        new ExportCommandsViewModel())
+        new ExportCommandsViewModel(),
+        new DashboardViewModel())
     { }
+
+    private void SetEditorText(string sql)
+    {
+        var editor = EditorTabs.Active?.Editor;
+        if (editor is null) return;
+        editor.SqlText = sql;
+    }
 
     public void SetActiveFile(LoadedFile file)
     {
@@ -122,10 +135,10 @@ public partial class MainViewModel : ViewModelBase
         {
             var bytes = await _http.GetByteArrayAsync("samples/sales.csv");
             await IngestAsync(new UploadedFile("sales.csv", bytes));
-            Editor.SqlText =
+            SetEditorText(
                 "-- 500 synthetic sales rows. Try this:\n" +
                 "SELECT region, ROUND(SUM(amount), 2) AS revenue\n" +
-                "FROM sales\nGROUP BY region\nORDER BY revenue DESC;";
+                "FROM sales\nGROUP BY region\nORDER BY revenue DESC;");
         }
         catch (Exception ex)
         {
@@ -145,7 +158,6 @@ public partial class MainViewModel : ViewModelBase
         Insights.IsOpen = true;
         try
         {
-            // Pull a small sample for the AI to look at.
             var sample = await _duckDb.QueryAsync($"SELECT * FROM \"{file.TableName}\" LIMIT 20");
             var insight = await _ai.ExplainDatasetAsync(file, sample.Rows);
             Insights.Load(insight);
@@ -167,6 +179,17 @@ public partial class MainViewModel : ViewModelBase
     {
         JoinBuilder.Refresh(Files.Files);
         JoinBuilder.IsOpen = true;
+    }
+
+    [RelayCommand]
+    private void PinCurrentQuery()
+    {
+        var editor = EditorTabs.Active?.Editor;
+        if (editor is null) return;
+        var sql = editor.SqlText?.Trim();
+        if (string.IsNullOrWhiteSpace(sql)) return;
+        var title = EditorTabs.Active?.Title ?? $"Tile {Dashboard.Tiles.Count + 1}";
+        Dashboard.Pin(new DashboardTile(Guid.NewGuid(), title, sql, DateTimeOffset.Now));
     }
 
     public async Task IngestAsync(UploadedFile file)
