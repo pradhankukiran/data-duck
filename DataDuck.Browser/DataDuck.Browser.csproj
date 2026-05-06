@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <PropertyGroup>
+    <TargetFramework>net10.0-browser</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataDuck\DataDuck.csproj" />
+  </ItemGroup>
+
+  <!--
+    Copy the DuckDB-WASM bundle from node_modules into wwwroot/duckdb before
+    Build and Publish. Skipped when the expected output file already exists,
+    so the script doesn't run on every incremental build. Vercel runs
+    `dotnet publish`, so Publish must trigger this too.
+  -->
+  <Target Name="CopyDuckDbAssets"
+          BeforeTargets="Build;Publish"
+          Inputs="..\scripts\copy-duckdb.mjs;..\package.json"
+          Outputs="wwwroot\duckdb\duckdb-eh.wasm;wwwroot\duckdb\duckdb-browser-eh.worker.js;wwwroot\duckdb\duckdb-browser.mjs"
+          Condition="!Exists('wwwroot\duckdb\duckdb-eh.wasm') Or !Exists('wwwroot\duckdb\duckdb-browser-eh.worker.js') Or !Exists('wwwroot\duckdb\duckdb-browser.mjs')">
+    <Message Importance="high" Text="Copying DuckDB-WASM assets via scripts/copy-duckdb.mjs..." />
+    <Exec Command="node scripts/copy-duckdb.mjs" WorkingDirectory=".." />
+  </Target>
+</Project>
