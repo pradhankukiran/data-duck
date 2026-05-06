@@ -1,0 +1,267 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:DataDuck.ViewModels"
+             xmlns:m="using:DataDuck.Models"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
+             x:Class="DataDuck.Views.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+
+  <Design.DataContext>
+    <vm:DashboardViewModel/>
+  </Design.DataContext>
+
+  <Grid RowDefinitions="Auto,*">
+
+    <!-- =========================================================== HEADER -->
+    <Border Grid.Row="0"
+            Background="{StaticResource DdBgPanelBrush}"
+            CornerRadius="8"
+            BorderBrush="{StaticResource DdBorderBrush}"
+            BorderThickness="1"
+            Margin="0,8,0,8"
+            Padding="14,10">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <TextBlock Text="📌"
+                     FontSize="20"
+                     VerticalAlignment="Center"/>
+          <TextBlock Text="Dashboard"
+                     FontSize="16" FontWeight="SemiBold"
+                     Foreground="{StaticResource DdTextPrimaryBrush}"
+                     VerticalAlignment="Center"/>
+          <Border Background="{StaticResource DdBgHoverBrush}"
+                  CornerRadius="3" Padding="6,2"
+                  VerticalAlignment="Center">
+            <TextBlock Text="{Binding Tiles.Count, StringFormat='{}{0} tile(s)'}"
+                       FontSize="11"
+                       Foreground="{StaticResource DdTextMutedBrush}"/>
+          </Border>
+        </StackPanel>
+
+        <TextBlock Grid.Column="1"
+                   Text="{Binding StatusMessage}"
+                   FontSize="11"
+                   Foreground="{StaticResource DdSuccessBrush}"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Center"
+                   Margin="16,0"
+                   IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+        <ProgressBar Grid.Column="2"
+                     IsIndeterminate="True"
+                     Width="80" Height="3"
+                     VerticalAlignment="Center"
+                     Margin="0,0,12,0"
+                     IsVisible="{Binding IsRefreshing}"/>
+
+        <Button Grid.Column="3"
+                Content="🔄  Refresh all"
+                Padding="12,6"
+                Background="{StaticResource DdAccentBrush}"
+                Foreground="#0F1419"
+                CornerRadius="6"
+                FontWeight="Medium"
+                FontSize="12"
+                Command="{Binding RefreshAllCommand}"
+                IsEnabled="{Binding HasTiles}"/>
+      </Grid>
+    </Border>
+
+    <!-- =========================================================== BODY -->
+    <Grid Grid.Row="1">
+
+      <!-- Empty state -->
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                  Spacing="12"
+                  IsVisible="{Binding !HasTiles}">
+        <TextBlock Text="📌"
+                   FontSize="48"
+                   Opacity="0.35"
+                   HorizontalAlignment="Center"/>
+        <TextBlock Text="No pinned tiles yet"
+                   HorizontalAlignment="Center"
+                   Foreground="{StaticResource DdTextMutedBrush}"
+                   FontSize="14"/>
+        <TextBlock Text="Run a query, then click 'Pin to dashboard' to save it as a tile."
+                   HorizontalAlignment="Center"
+                   Foreground="{StaticResource DdTextMutedBrush}"
+                   FontSize="12"
+                   Opacity="0.7"
+                   TextWrapping="Wrap"
+                   MaxWidth="420"/>
+      </StackPanel>
+
+      <!-- Tile grid -->
+      <ScrollViewer IsVisible="{Binding HasTiles}">
+        <ItemsControl ItemsSource="{Binding TileResults}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal"/>
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:TileResultViewModel">
+              <Border Width="360" Height="240" Margin="6"
+                      Background="{StaticResource DdBgPanelBrush}"
+                      BorderBrush="{StaticResource DdBorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="8"
+                      Padding="12">
+                <Grid RowDefinitions="Auto,*,Auto">
+
+                  <!-- Title row + remove button -->
+                  <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                    <TextBlock Text="{Binding Title}"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource DdTextPrimaryBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center"/>
+                    <Button Grid.Column="1"
+                            Content="✕"
+                            Width="22" Height="22"
+                            Padding="0"
+                            FontSize="11"
+                            Background="Transparent"
+                            Foreground="{StaticResource DdTextMutedBrush}"
+                            BorderThickness="0"
+                            Command="{Binding ((vm:DashboardViewModel)DataContext).RemoveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding Tile}"
+                            ToolTip.Tip="Remove tile"/>
+                  </Grid>
+
+                  <!-- Mini chart area -->
+                  <Grid Grid.Row="1">
+
+                    <!-- Loading spinner -->
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Spacing="8"
+                                IsVisible="{Binding IsLoading}">
+                      <ProgressBar IsIndeterminate="True" Width="80" Height="3"/>
+                      <TextBlock Text="refreshing…"
+                                 FontSize="11"
+                                 Foreground="{StaticResource DdTextMutedBrush}"
+                                 HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Error -->
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Spacing="6"
+                                IsVisible="{Binding HasError}">
+                      <TextBlock Text="⚠"
+                                 FontSize="22"
+                                 HorizontalAlignment="Center"
+                                 Foreground="{StaticResource DdErrorBrush}"/>
+                      <TextBlock Text="{Binding ErrorMessage}"
+                                 FontSize="11"
+                                 Foreground="{StaticResource DdErrorBrush}"
+                                 TextWrapping="Wrap"
+                                 MaxWidth="320"
+                                 TextAlignment="Center"
+                                 MaxLines="3"
+                                 TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+
+                    <!-- Big number -->
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Spacing="4"
+                                IsVisible="{Binding IsBigNumber}">
+                      <TextBlock Text="{Binding BigNumberLabel}"
+                                 FontSize="10" FontWeight="Bold" LetterSpacing="2"
+                                 Foreground="{StaticResource DdTextMutedBrush}"
+                                 HorizontalAlignment="Center"/>
+                      <TextBlock Text="{Binding BigNumberValue}"
+                                 FontSize="40" FontWeight="Bold"
+                                 Foreground="{StaticResource DdTextPrimaryBrush}"
+                                 HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Bar chart -->
+                    <Grid IsVisible="{Binding IsBarChart}" RowDefinitions="Auto,*">
+                      <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="4" Margin="0,0,0,6">
+                        <TextBlock Text="{Binding ValueColumn}"
+                                   FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                        <TextBlock Text="by"
+                                   FontSize="11"
+                                   Foreground="{StaticResource DdTextMutedBrush}"/>
+                        <TextBlock Text="{Binding CategoryColumn}"
+                                   FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource DdTextPrimaryBrush}"/>
+                      </StackPanel>
+                      <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding BarPoints}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="m:BarPoint">
+                              <Grid ColumnDefinitions="100,*,70" Height="20" Margin="0,1">
+                                <TextBlock Text="{Binding Label}"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource DdTextPrimaryBrush}"
+                                           FontSize="11"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <ProgressBar Grid.Column="1"
+                                             Margin="4,0"
+                                             Value="{Binding Value}"
+                                             Maximum="{Binding Max}"
+                                             Foreground="{StaticResource DdAccentBrush}"
+                                             Background="{StaticResource DdBgHoverBrush}"
+                                             MinWidth="40"
+                                             Height="14"
+                                             VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2"
+                                           Text="{Binding Display}"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Right"
+                                           Foreground="{StaticResource DdTextPrimaryBrush}"
+                                           FontFamily="Consolas, Menlo, monospace"
+                                           FontSize="11"/>
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                    </Grid>
+
+                    <!-- Empty / not-yet-refreshed -->
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Spacing="4"
+                                IsVisible="{Binding IsEmpty}">
+                      <TextBlock Text="—"
+                                 FontSize="22"
+                                 Foreground="{StaticResource DdTextMutedBrush}"
+                                 HorizontalAlignment="Center"
+                                 Opacity="0.6"/>
+                      <TextBlock Text="no chartable shape"
+                                 FontSize="10"
+                                 Foreground="{StaticResource DdTextMutedBrush}"
+                                 HorizontalAlignment="Center"/>
+                    </StackPanel>
+                  </Grid>
+
+                  <!-- Footer: elapsed + last refreshed -->
+                  <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding ElapsedMs, StringFormat='{}{0} ms'}"
+                                 FontSize="10"
+                                 Foreground="{StaticResource DdSuccessBrush}"
+                                 IsVisible="{Binding LastRefreshed, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                      <TextBlock Text="·"
+                                 FontSize="10"
+                                 Foreground="{StaticResource DdTextMutedBrush}"
+                                 IsVisible="{Binding LastRefreshed, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                      <TextBlock Text="{Binding LastRefreshed, StringFormat='{}refreshed {0:HH:mm:ss}'}"
+                                 FontSize="10"
+                                 Foreground="{StaticResource DdTextMutedBrush}"
+                                 IsVisible="{Binding LastRefreshed, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                    </StackPanel>
+                  </Grid>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+</UserControl>
