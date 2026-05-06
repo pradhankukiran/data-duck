@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
@@ -126,6 +127,53 @@ public partial class MainView : UserControl
         var top = TopLevel.GetTopLevel(this);
         if (top?.Clipboard is null) return;
         await top.Clipboard.SetTextAsync(text);
+    }
+
+    private async void OnExportWorkspace(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        var top = TopLevel.GetTopLevel(this);
+        if (top is null) return;
+
+        var file = await top.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save DataDuck workspace",
+            SuggestedFileName = $"dataduck-workspace-{DateTimeOffset.Now:yyyyMMdd-HHmm}",
+            DefaultExtension = "dataduck",
+            FileTypeChoices = new[]
+            {
+                new FilePickerFileType("DataDuck workspace") { Patterns = new[] { "*.dataduck", "*.json" } },
+            },
+        });
+        if (file is null) return;
+
+        var json = vm.Workspace.ExportJson();
+        await using var stream = await file.OpenWriteAsync();
+        await using var writer = new StreamWriter(stream);
+        await writer.WriteAsync(json);
+    }
+
+    private async void OnImportWorkspace(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        var top = TopLevel.GetTopLevel(this);
+        if (top is null) return;
+
+        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Open DataDuck workspace",
+            AllowMultiple = false,
+            FileTypeFilter = new[]
+            {
+                new FilePickerFileType("DataDuck workspace") { Patterns = new[] { "*.dataduck", "*.json" } },
+            },
+        });
+        if (files.Count == 0) return;
+
+        await using var stream = await files[0].OpenReadAsync();
+        using var reader = new StreamReader(stream);
+        var json = await reader.ReadToEndAsync();
+        vm.Workspace.TryImportJson(json);
     }
 }
 

@@ -56,6 +56,7 @@ public partial class App : Application
         services.AddSingleton<JoinBuilderViewModel>();
         services.AddSingleton<ExportCommandsViewModel>();
         services.AddSingleton<DashboardViewModel>();
+        services.AddSingleton<WorkspaceCommandsViewModel>();
     }
 
     private static void ConfigureSharedServices(IServiceCollection services)

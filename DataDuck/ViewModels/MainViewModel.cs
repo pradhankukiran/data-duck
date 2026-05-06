@@ -27,6 +27,7 @@ public partial class MainViewModel : ViewModelBase
     public JoinBuilderViewModel JoinBuilder { get; }
     public ExportCommandsViewModel Export { get; }
     public DashboardViewModel Dashboard { get; }
+    public WorkspaceCommandsViewModel Workspace { get; }
 
     /// <summary>Convenience accessor to the active tab's editor (may be null briefly during refresh).</summary>
     public SqlEditorViewModel? ActiveEditor => EditorTabs.Active?.Editor;
@@ -52,6 +53,7 @@ public partial class MainViewModel : ViewModelBase
         JoinBuilderViewModel joinBuilder,
         ExportCommandsViewModel export,
         DashboardViewModel dashboard,
+        WorkspaceCommandsViewModel workspace,
         IFileService? fileService = null,
         IDuckDbService? duckDb = null,
         IAiService? ai = null,
@@ -68,6 +70,7 @@ public partial class MainViewModel : ViewModelBase
         JoinBuilder = joinBuilder;
         Export = export;
         Dashboard = dashboard;
+        Workspace = workspace;
         _fileService = fileService;
         _duckDb = duckDb;
         _ai = ai;
@@ -102,7 +105,8 @@ public partial class MainViewModel : ViewModelBase
         new ProfileViewModel(),
         new JoinBuilderViewModel(),
         new ExportCommandsViewModel(),
-        new DashboardViewModel())
+        new DashboardViewModel(),
+        new WorkspaceCommandsViewModel())
     { }
 
     private void SetEditorText(string sql)
@@ -191,6 +195,52 @@ public partial class MainViewModel : ViewModelBase
         var title = EditorTabs.Active?.Title ?? $"Tile {Dashboard.Tiles.Count + 1}";
         Dashboard.Pin(new DashboardTile(Guid.NewGuid(), title, sql, DateTimeOffset.Now));
     }
+
+    [RelayCommand]
+    private void CloseAnyOverlay()
+    {
+        if (Settings.IsOpen) Settings.IsOpen = false;
+        else if (Insights.IsOpen) Insights.IsOpen = false;
+        else if (JoinBuilder.IsOpen) JoinBuilder.IsOpen = false;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanExplainResult))]
+    private async Task ExplainResultAsync()
+    {
+        if (_ai is null) return;
+        if (!Results.HasRows) return;
+
+        var sql = EditorTabs.Active?.Editor.SqlText ?? "(query)";
+        var pseudoTable = new LoadedFile(
+            $"Result of: {Truncate(sql, 60)}",
+            "result",
+            0,
+            Results.Rows.Count,
+            Results.ColumnNames.Select(c => new ColumnMeta(c, "VARCHAR")).ToArray());
+
+        Insights.IsLoading = true;
+        Insights.ErrorMessage = null;
+        Insights.IsOpen = true;
+        try
+        {
+            var sample = Results.Rows.Take(20).ToArray();
+            var insight = await _ai.ExplainDatasetAsync(pseudoTable, sample);
+            Insights.Load(insight);
+        }
+        catch (Exception ex)
+        {
+            Insights.ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            Insights.IsLoading = false;
+        }
+    }
+
+    private bool CanExplainResult() => _ai is not null && Results.HasRows;
+
+    private static string Truncate(string s, int max) =>
+        s.Length <= max ? s : s[..max] + "…";
 
     public async Task IngestAsync(UploadedFile file)
     {
