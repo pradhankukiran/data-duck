@@ -475,3 +475,4 @@ DataDuck.Browser/wwwroot/duckdb/
 
 # Vercel deploy staging dir (regenerated from publish/wwwroot/ each deploy)
 dataduck-deploy/
+.vercel
