@@ -35,18 +35,17 @@ public class EnvVarGroqAiService : IAiService
         var apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvVar)!;
         var systemPrompt = BuildSystemPrompt(tables);
 
-        var payload = new
-        {
-            model = Model,
-            messages = new object[]
+        var payload = new GroqChatRequest(
+            Model,
+            new[]
             {
-                new { role = "system", content = systemPrompt },
-                new { role = "user", content = englishQuestion }
+                new GroqChatMessage("system", systemPrompt),
+                new GroqChatMessage("user", englishQuestion),
             },
-            temperature = 0.1
-        };
+            0.1,
+            ResponseFormat: null);
 
-        var json = JsonSerializer.Serialize(payload);
+        var json = JsonSerializer.Serialize(payload, DesktopJsonContext.Default.GroqChatRequest);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint)
         {
@@ -105,19 +104,17 @@ public class EnvVarGroqAiService : IAiService
         var systemPrompt = BuildInsightSystemPrompt();
         var userPrompt = BuildInsightUserPrompt(table, sampleRows);
 
-        var payload = new
-        {
-            model = Model,
-            messages = new object[]
+        var payload = new GroqChatRequest(
+            Model,
+            new[]
             {
-                new { role = "system", content = systemPrompt },
-                new { role = "user", content = userPrompt }
+                new GroqChatMessage("system", systemPrompt),
+                new GroqChatMessage("user", userPrompt),
             },
-            temperature = 0.2,
-            response_format = new { type = "json_object" }
-        };
+            0.2,
+            new GroqResponseFormat("json_object"));
 
-        var json = JsonSerializer.Serialize(payload);
+        var json = JsonSerializer.Serialize(payload, DesktopJsonContext.Default.GroqChatRequest);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint)
         {

@@ -58,7 +58,7 @@ public partial class QueryHistoryViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(json)) return;
         try
         {
-            var loaded = JsonSerializer.Deserialize<List<SavedQuery>>(json);
+            var loaded = JsonSerializer.Deserialize(json, DataDuckJsonContext.Default.ListSavedQuery);
             if (loaded is null) return;
 
             _suppressSave = true;
@@ -82,7 +82,8 @@ public partial class QueryHistoryViewModel : ViewModelBase
         if (_store is null) return;
         try
         {
-            _store.Set(StorageKey, JsonSerializer.Serialize(Items));
+            var snapshot = new List<SavedQuery>(Items);
+            _store.Set(StorageKey, JsonSerializer.Serialize(snapshot, DataDuckJsonContext.Default.ListSavedQuery));
         }
         catch
         {

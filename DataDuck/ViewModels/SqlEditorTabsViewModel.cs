@@ -132,7 +132,7 @@ public partial class SqlEditorTabsViewModel : ViewModelBase
 
         try
         {
-            var loaded = JsonSerializer.Deserialize<List<PersistedTab>>(json);
+            var loaded = JsonSerializer.Deserialize(json, DataDuckJsonContext.Default.ListPersistedTab);
             if (loaded is null || loaded.Count == 0) return;
 
             _suppressSave = true;
@@ -176,7 +176,7 @@ public partial class SqlEditorTabsViewModel : ViewModelBase
                     Sql = t.Editor.SqlText,
                 });
             }
-            _store.Set(StorageKey, JsonSerializer.Serialize(snapshot));
+            _store.Set(StorageKey, JsonSerializer.Serialize(snapshot, DataDuckJsonContext.Default.ListPersistedTab));
         }
         catch
         {
@@ -192,13 +192,13 @@ public partial class SqlEditorTabsViewModel : ViewModelBase
         AttachEditor(tab);
         Tabs.Add(tab);
     }
+}
 
-    private sealed class PersistedTab
-    {
-        public Guid Id { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string Sql { get; set; } = string.Empty;
-    }
+internal sealed class PersistedTab
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Sql { get; set; } = string.Empty;
 }
 
 public sealed class EditorTab

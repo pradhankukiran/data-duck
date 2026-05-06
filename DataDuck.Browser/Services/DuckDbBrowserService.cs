@@ -40,7 +40,7 @@ public partial class DuckDbBrowserService : IDuckDbService
     {
         await InitAsync();
         var json = await RegisterFile(fileName, data);
-        var meta = JsonSerializer.Deserialize<RegisterResp>(json, JsonOptions)
+        var meta = JsonSerializer.Deserialize(json, BrowserJsonContext.Default.RegisterResp)
                    ?? throw new InvalidOperationException("Empty response from registerFile");
 
         return new LoadedFile(
@@ -96,12 +96,7 @@ public partial class DuckDbBrowserService : IDuckDbService
 
     [JSImport("query", "duckdb-shim")]
     internal static partial Task<string> Query(string sql);
-
-    private sealed record RegisterResp(string TableName, int RowCount, ColInfo[] Columns);
-    private sealed record ColInfo(string Name, string Type);
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
 }
+
+internal sealed record RegisterResp(string TableName, int RowCount, ColInfo[] Columns);
+internal sealed record ColInfo(string Name, string Type);
