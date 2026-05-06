@@ -1,0 +1,44 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:DataDuck"
+             x:Class="DataDuck.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.DataTemplates>
+        <local:ViewLocator/>
+    </Application.DataTemplates>
+
+    <Application.Styles>
+        <FluentTheme />
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+    </Application.Styles>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- DataDuck brand palette -->
+            <Color x:Key="DdBgBase">#0F1419</Color>
+            <Color x:Key="DdBgPanel">#1A2027</Color>
+            <Color x:Key="DdBgSidebar">#161C22</Color>
+            <Color x:Key="DdBgHover">#222A33</Color>
+            <Color x:Key="DdBorder">#2A3138</Color>
+            <Color x:Key="DdTextPrimary">#E5E7EB</Color>
+            <Color x:Key="DdTextMuted">#9CA3AF</Color>
+            <Color x:Key="DdAccent">#F4C430</Color>
+            <Color x:Key="DdAccentHover">#F7D75A</Color>
+            <Color x:Key="DdError">#EF4444</Color>
+            <Color x:Key="DdSuccess">#10B981</Color>
+
+            <SolidColorBrush x:Key="DdBgBaseBrush" Color="{StaticResource DdBgBase}"/>
+            <SolidColorBrush x:Key="DdBgPanelBrush" Color="{StaticResource DdBgPanel}"/>
+            <SolidColorBrush x:Key="DdBgSidebarBrush" Color="{StaticResource DdBgSidebar}"/>
+            <SolidColorBrush x:Key="DdBgHoverBrush" Color="{StaticResource DdBgHover}"/>
+            <SolidColorBrush x:Key="DdBorderBrush" Color="{StaticResource DdBorder}"/>
+            <SolidColorBrush x:Key="DdTextPrimaryBrush" Color="{StaticResource DdTextPrimary}"/>
+            <SolidColorBrush x:Key="DdTextMutedBrush" Color="{StaticResource DdTextMuted}"/>
+            <SolidColorBrush x:Key="DdAccentBrush" Color="{StaticResource DdAccent}"/>
+            <SolidColorBrush x:Key="DdAccentHoverBrush" Color="{StaticResource DdAccentHover}"/>
+            <SolidColorBrush x:Key="DdErrorBrush" Color="{StaticResource DdError}"/>
+            <SolidColorBrush x:Key="DdSuccessBrush" Color="{StaticResource DdSuccess}"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
