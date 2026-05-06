@@ -19,6 +19,20 @@ dotnet --version
 echo "::: Installing wasm-tools workload :::"
 dotnet workload install wasm-tools
 
+# Vercel's build image lacks libatomic.so.1, which the .NET-bundled emscripten Node
+# is dynamically linked against. Swap the bundled Node binary for Vercel's system
+# Node (which ships glibc-compatible). Local builds skip this branch since the
+# bundled Node works on a normal Linux dev box.
+BUNDLED_NODE="$DOTNET_INSTALL_DIR/packs/Microsoft.NET.Runtime.Emscripten.3.1.56.Node.linux-x64/10.0.7/tools/bin/node"
+if [ -f "$BUNDLED_NODE" ] && ! "$BUNDLED_NODE" --version >/dev/null 2>&1; then
+    SYSTEM_NODE="$(command -v node || true)"
+    if [ -n "$SYSTEM_NODE" ]; then
+        echo "::: Bundled emscripten Node failed. Replacing with $SYSTEM_NODE ($(node --version)) :::"
+        rm -f "$BUNDLED_NODE"
+        ln -sf "$SYSTEM_NODE" "$BUNDLED_NODE"
+    fi
+fi
+
 echo "::: npm install (for @duckdb/duckdb-wasm bundle) :::"
 npm ci 2>/dev/null || npm install
 
