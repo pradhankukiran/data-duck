@@ -10,7 +10,7 @@
         Title="DataDuck — SQL data lab in your browser"
         Width="1280" Height="800"
         MinWidth="900" MinHeight="600"
-        Background="#0F1419">
+        Background="#F3F4F6">
         <views:MainView />
 </Window>
 
